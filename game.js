@@ -239,7 +239,7 @@ var counter =function(){
     if (count <= 0)
     {
       // stop the timer
-       clearInterval(counter);
+       //clearInterval(counter);
        // set game to finished
        finished = true;
        count=0;
@@ -259,10 +259,11 @@ var counter =function(){
 var restart = function() {
   count = 30;
   finished = false;
-  setInterval(counter,1000);
   monsterReady=true;
   heroReady=true;
+  monstersCaught=0;
   canvas.removeEventListener("mousedown", clickHandler);
+  //setInterval(counter,1000);
 }
 //this handles click events when the button is visible
 var clickHandler = function(event) {
