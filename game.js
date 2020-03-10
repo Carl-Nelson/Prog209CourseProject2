@@ -3,13 +3,88 @@
   http://www.lostdecadegames.com/how-to-make-a-simple-html5-canvas-game/
   using graphics purchased from vectorstock.com
 */
-// Create the canvas for the game to display in
-var canvas = document.createElement("canvas");
-var ctx = canvas.getContext("2d");
-// set the canvas size
-canvas.width = 512;
-canvas.height = 480;
-document.body.appendChild(canvas); // inject this new element intot the DOM
+
+/* * * * * * RAIN SECTION START * * * * * * * * */
+// get the canvas and a 2d rendering context
+let canvas = document.getElementById("canvas");
+let ctx = canvas.getContext('2d');
+
+//an arbitrary amount of rain particles. Too much more than this and it starts getting slow on my laptop
+const maxParts = 1000;
+let particles = [];
+for (let i = 0; i < maxParts; i++) {
+  //each rain particle has a position(x,y), a length, and a velocity(x,y of course)
+  particles.push({ 
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    l: Math.random(),//length of the rain drop
+    xs: -4 + Math.random() * 4 + 2, //speed in the x-direction
+    ys: Math.random() * 10 + 10 //speed goin down. Rain's going to be going down a lot faster than sideways
+  })
+}
+
+
+let drawRain = function() {
+  //set the style options
+  ctx.strokeStyle = 'rgba(174,194,224,0.5)'; //kind of a light blue color, half opacity
+  ctx.lineWidth = 1;
+  ctx.lineCap = 'round';
+  //for each particle 
+  for (let i = 0; i < particles.length; i++) {
+    let p = particles[i];
+    ctx.beginPath();//start drawing a line!
+    ctx.moveTo(p.x, p.y);//move the pen to the particle's location
+    ctx.lineTo(p.x + p.l * p.xs, p.y + p.l * p.ys); //plot a line
+    ctx.stroke();//aaand execute
+  }
+  move();//move all the raindrops after drawing
+}
+
+let move = function() {
+  for (let i = 0; i < particles.length; i++) {//for each particle
+    let p = particles[i];
+    p.x += p.xs;//change position according to the particle's speed
+    p.y += p.ys;
+    if (p.x > canvas.width || p.y > canvas.height) {//if the particle leaves the canvas, move it back to the top somewhere
+      p.x = Math.random() * canvas.width;
+      p.y = -20;//well okay, technically above the top. give the particle some time to travel
+    }
+  }
+}
+/* * * * * * * RAIN SECTION END * * * * * * * */
+
+
+/* * * * * * * BUTTON SECTION START * * * * * * */
+//I've decided to add a button that you can click to restart the game without refreshing.
+//can't really have a high score if the only way to restart is reloading the whole page, y'know?
+//it's actually pretty simple, if still a lot more involved than doing it with html
+
+let restartButton = {//using an object just so I have fewer values to mess with if I want to change things
+  x: 131,
+  y: 190,
+  width: 250,
+  height: 100,
+};
+
+let drawButton = function() {
+
+  ctx.fillStyle="rgb(7, 206, 213)";
+  ctx.fillRect(restartButton.x, restartButton.y, restartButton.width, restartButton.height);
+  ctx.fillStyle = "rgb(250, 250, 250)";
+  ctx.font = "32px Helvetica white";
+  //figure out how wide the button's text is, so it can be centered properly
+  let textSize = ctx.measureText("Restart");
+  //and then place the text
+  let textX = restartButton.x + (restartButton.width/2) - (textSize.width / 2);
+  let textY = restartButton.y + (restartButton.height/2) - 12;//to set the y position to the middle of the button, we gotta subtract half the font size (24px)
+  ctx.fillText("Restart", textX, textY);
+  //lets give the button a nice outline, too
+  ctx.strokeStyle = "rgb(250, 250, 250)";
+  ctx.strokeRect(restartButton.x,restartButton.y,restartButton.width, restartButton.height);
+}
+
+/* * * * * * BUTTON SECTION END * * * * * */
+
 
 // load images, use the onload event so we can later wait for images to be there
 // Load the background image
@@ -41,9 +116,14 @@ monsterImage.src = "images/monster.png";
 
 // Create the game objects
 var hero = {
-  speed: 256 // movement speed of hero in pixels per second
+  speed: 256, // movement speed of hero in pixels per second
+  x:0,
+  y:0
 };
-var monster = {};  // empty object, we'll add stuff later
+var monster = {
+  x:0,
+  y:0
+};
 var monstersCaught = 0;
 
 // Handle keyboard controls
@@ -90,21 +170,21 @@ how fast (or slowly) the script is running.
 */
 
 var update = function (modifier) {     // modifier parameter modifys the speed  value for character motion
-  if (38 in keysDown) { // Player is holding up key
+  if (38 in keysDown || 87 in keysDown) { // Player is holding up key or 'w'
     hero.y -= hero.speed * modifier;
   }
-  if (40 in keysDown) { // Player is holding down key
+  if (40 in keysDown || 83 in keysDown) { // Player is holding down key or 's'
     hero.y += hero.speed * modifier;
   }
-  if (37 in keysDown) { // Player is holding left key
+  if (37 in keysDown || 65 in keysDown) { // Player is holding left key or 'a'
     hero.x -= hero.speed * modifier;
   }
-  if (39 in keysDown) { // Player is holding right key
+  if (39 in keysDown || 68 in keysDown) { // Player is holding right key or 'd'
     hero.x += hero.speed * modifier;
   }
   // Check if player and monster collider
   if (
-    hero.x <= (monster.x + 32)  // 32 is lenght and width of the characters
+    hero.x <= (monster.x + 32)  // 32 is length and width of the characters
     && monster.x <= (hero.x + 32)
     && hero.y <= (monster.y + 32)
     && monster.y <= (hero.y + 32)
@@ -112,10 +192,18 @@ var update = function (modifier) {     // modifier parameter modifys the speed  
     ++monstersCaught;  // count up in our score
     reset();  // call that function to move the player and monster
   }
+  //wall collision detection
+  if (hero.x < 0) {hero.x = 0}
+  if (hero.x+32 > canvas.width) {hero.x = canvas.width-32}
+  if (hero.y < 0) {hero.y = 0}
+  if (hero.y+32 > canvas.height) {hero.y = canvas.height-32}
 };
+
+let highScore = 0;
 
 // Function to Draw everything on the canvas
 var render = function () {
+  ctx.clearRect(0,0,512,480);
   if (bgReady) {                  // not really sure the use of this if, if its not ready, it fails anyhow??
     ctx.drawImage(bgImage, 0, 0);   // place image using the upper left corner, so 0,0
   }
@@ -125,18 +213,21 @@ var render = function () {
   if (monsterReady) {
     ctx.drawImage(monsterImage, monster.x, monster.y);
   }
+  
   // Display score and time 
   ctx.fillStyle = "rgb(250, 250, 250)";  // white text
   ctx.font = "24px Helvetica";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText("Monsters caught: " + monstersCaught, 20, 20);
-  ctx.fillText("Time: " + count, 20, 50);
+  ctx.fillText("High Score: " + highScore ,20,20);
+  ctx.fillText("Monsters caught: " + monstersCaught, 20, 50);
+  ctx.fillText("Time: " + count, 20, 80);
   // Display game over message when timer finished
   if(finished==true){
-    ctx.fillText("Game over!", 200, 220);
+    ctx.fillText("Game over!", 200, 160);
+    //draw the restart button
+    drawButton();
   }
-  
 };
 
 var count = 30; // how many seconds the game lasts for - default 30
@@ -155,26 +246,52 @@ var counter =function(){
        // hider monster and hero
        monsterReady=false;
        heroReady=false;
+       //set the high score
+       if (monstersCaught > highScore) {
+         highScore = monstersCaught;
+       }
+
+       canvas.addEventListener("mousedown", clickHandler, false);
     }
+}
+
+//this function resets the timer and everything needed to start the game again.
+var restart = function() {
+  count = 30;
+  finished = false;
+  setInterval(counter,1000);
+  monsterReady=true;
+  heroReady=true;
+  canvas.removeEventListener("mousedown", clickHandler);
+}
+//this handles click events when the button is visible
+var clickHandler = function(event) {
+  if ((event.x > 131 && event.x < 381) && (event.y > 190 && event.y < 290)) {
+    restart();
+  }
 }
 
 // timer interval is every second (1000ms)
 setInterval(counter, 1000);  // see explanation below, only being used to count down the game seconds
 // The main game loop
 var main = function () {
+  
   update(0.02); // check state of keys and for collisions, pass in a modifier  which "scales" the speed based on how
                 // fast the requestAnimationFrame is cycling (fast or slow browser)
   render();   // redraw everything
+  drawRain(); //put the rain on top
+  
+  
   requestAnimationFrame(main);   // Request to do this again ASAP
 };
 // Cross-browser support for requestAnimationFrame
-var w = window;
-requestAnimationFrame = w.requestAnimationFrame || w.webkitRequestAnimationFrame || w.msRequestAnimationFrame || w.mozRequestAnimationFrame;
+requestAnimationFrame = window.requestAnimationFrame || window.webkitRequestAnimationFrame || window.msRequestAnimationFrame || window.mozRequestAnimationFrame;
 /*
-To continuously call the main game loop function, this tutorial used to execute the setInterval method. 
-These days there's a better way, via the requestAnimationFrame method. However, as with most new web technologies, 
-some code is needed to ensure cross-browser support.
-*/
+// To continuously call the main game loop function, this tutorial used to execute the setInterval method. 
+// These days there's a better way, via the requestAnimationFrame method. However, as with most new web technologies, 
+// some code is needed to ensure cross-browser support.
+// */
+
 
 
 // Let's play this game!
