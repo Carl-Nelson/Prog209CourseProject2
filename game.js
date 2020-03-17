@@ -94,7 +94,7 @@ bgImage.onload = function () {
   // show the background image
   bgReady = true;
 };
-bgImage.src = "images/background.png";
+bgImage.src = "images/grass2.png";
 // Load the hero image
 var heroReady = false;
 var heroImage = new Image();
@@ -102,7 +102,7 @@ heroImage.onload = function () {
   // show the here image
   heroReady = true;
 };
-heroImage.src = "images/hero.png";
+heroImage.src = "images/hero2.png";
 
 // Load the monster image
 var monsterReady = false;
@@ -111,7 +111,7 @@ monsterImage.onload = function () {
   // show the monster image
   monsterReady = true;
 };
-monsterImage.src = "images/monster.png";
+monsterImage.src = "images/treasure2.png";
 
 
 // Create the game objects
@@ -215,12 +215,16 @@ var render = function () {
   }
   
   // Display score and time 
+  ctx.fillStyle = "rgb(0,0,0)";
+  ctx.globalAlpha = 0.3;
+  ctx.fillRect(10,10,250,100);
+  ctx.globalAlpha = 1.0;
   ctx.fillStyle = "rgb(250, 250, 250)";  // white text
   ctx.font = "24px Helvetica";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.fillText("High Score: " + highScore ,20,20);
-  ctx.fillText("Monsters caught: " + monstersCaught, 20, 50);
+  ctx.fillText("Treasure found: " + monstersCaught, 20, 50);
   ctx.fillText("Time: " + count, 20, 80);
   // Display game over message when timer finished
   if(finished==true){
